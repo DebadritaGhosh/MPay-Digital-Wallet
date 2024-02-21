@@ -26,7 +26,15 @@ const userSchema = mongoose.Schema({
 		required: [true, "Please provide password"],
 		minLength: [6, "Please make sure your password is at least 6 characters long"],
 		maxLength: [128, "Please make sure your password is less than 128 characters long"]
-	}
+	},
+    balance: {
+        type: Number,
+        default: 0
+    },
+    transactions: [{
+        type: ObjectId,
+        ref: 'Transaction'
+    }]
 }, {
 	collection: "users",
 	timestamps: true,
