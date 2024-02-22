@@ -10,7 +10,7 @@ const DEFAULT_PICTURE = "https://res.cloudinary.com/dkd5jblv5/image/upload/v1675
 
 export const createUser = async (userData) => {
 
-	const { name, email, picture, password } = userData;
+	const { name, email, picture,phone_number, password } = userData;
 
 	// Check if fields are empty
 	if (!name || !email || !password) {
@@ -28,6 +28,11 @@ export const createUser = async (userData) => {
 	// Check if email is valid
 	if (!validator.isEmail(email)) {
 		throw createHttpError.BadRequest("Please provide a valid email address.");
+	}
+	
+	// Check if phone number is valid
+	if (!validator.isMobilePhone(phone_number)) {
+		throw createHttpError.BadRequest("Please provide a valid phone number.");
 	}
 
 	// Check if user already exists
@@ -48,6 +53,7 @@ export const createUser = async (userData) => {
 		name,
 		email,
 		picture: picture || DEFAULT_PICTURE,
+		phone_number,
 		password
 	}).save();
 
@@ -61,7 +67,8 @@ export const signUser = async (userData) => {
 
 	const { email, password } = userData;
 
-	const user = await UserModel.findOne({email : email.toLowerCase()}).exec().lean();
+	const user = await UserModel.findOne({email : email.toLowerCase()});
+	// .exec().lean();
 	
 	// Check if email exists
 	if(!user){

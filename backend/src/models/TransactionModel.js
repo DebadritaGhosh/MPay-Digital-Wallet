@@ -1,12 +1,17 @@
+import mongoose from "mongoose";
+
+const { ObjectId } = mongoose.Schema.Types;
+
+
 const transactionSchema = new mongoose.Schema({
     sender: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: ObjectId,
+        ref: 'UserModel',
         required: true
     },
     receiver: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: ObjectId,
+        ref: 'UserModel',
         required: true
     },
     amount: {
@@ -27,5 +32,5 @@ const transactionSchema = new mongoose.Schema({
 });
 
 
-const UserModel = mongoose.models.transactionSchema || mongoose.model("TransactionModel", transactionSchema);
-export default UserModel;
+const TransactionModel = mongoose.models.transactionSchema || mongoose.model("TransactionModel", transactionSchema);
+export default TransactionModel;

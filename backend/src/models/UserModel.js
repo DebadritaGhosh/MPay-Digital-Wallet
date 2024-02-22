@@ -21,6 +21,17 @@ const userSchema = mongoose.Schema({
 		type: String,
 		default: "https://res.cloudinary.com/dkd5jblv5/image/upload/v1675976806/Default_ProfilePicture_gjngnb.png"
 	},
+	phone_number: {
+		type: String,
+        required: [true, "Please provide a phone number"],
+		unique: [true, "This phone number is already exists"],
+        validate: {
+            validator: function (value) {
+                return validator.isMobilePhone(value, 'any', { strictMode: false });
+            },
+            message: "Please provide a valid phone number"
+        }
+    },
 	password: {
 		type: String,
 		required: [true, "Please provide password"],
@@ -28,8 +39,12 @@ const userSchema = mongoose.Schema({
 		maxLength: [128, "Please make sure your password is less than 128 characters long"]
 	},
     balance: {
-        type: Number,
-        default: 0
+		type: Number,
+        default: 0,
+        validate: {
+            validator: Number.isInteger,
+            message: "{VALUE} is not an integer value for balance"
+        }
     },
     transactions: [{
         type: ObjectId,

@@ -6,8 +6,8 @@ import { findUser } from "../services/user.service.js";
 // Register controller
 export const registerController = async (req, res, next) => {
     try {
-        const { name, email, picture, password } = req.body;
-        const newUser = await createUser({ name, email, picture, password });
+        const { name, email, picture,phone_number, password } = req.body;
+        const newUser = await createUser({ name, email, picture,phone_number, password });
         const access_token = await generateToken({ userId: newUser._id }, "1d", process.env.ACCESS_TOKEN_SECRET);
         const refresh_token = await generateToken({ userId: newUser._id }, "30d", process.env.REFRESH_TOKEN_SECRET);
         res.cookie('refreshtoken', refresh_token, {
@@ -26,6 +26,7 @@ export const registerController = async (req, res, next) => {
                 name: newUser.name,
                 email: newUser.email,
                 picture: newUser.picture,
+                phone_number: newUser.phone_number,
                 access_token: access_token,
                 refresh_token: refresh_token,
             }
@@ -40,7 +41,7 @@ export const loginController = async (req, res, next) => {
     try {
         const { email, password } = req.body;
         const user = await signUser({ email, password });
-        console.log(user);
+        // console.log(user);
 
         const access_token = await generateToken({ userId: user._id }, "1d", process.env.ACCESS_TOKEN_SECRET);
         const refresh_token = await generateToken({ userId: user._id }, "30d", process.env.REFRESH_TOKEN_SECRET);
