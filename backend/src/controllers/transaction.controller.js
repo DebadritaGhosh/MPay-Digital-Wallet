@@ -22,62 +22,36 @@ const razorpay = new Razorpay({
 
 
 export const addMoneyController = async (req, res) => {
-    // try {
-    //     const { amount } = req.body;
-	// 	const userId = req.user.userId;
+    try {
+        const { amount } = req.body;
+		const userId = req.user.userId;
 
-    //     // Check if userId and amount are provided
-    //     if (!userId || !amount) {
-    //         return res.status(400).json({ message: "userId and amount are required" });
-    //     }
-
-    //     // Find the user by ID
-    //     const user = await UserModel.findById(userId);
-
-    //     // Check if user exists
-    //     if (!user) {
-    //         return res.status(404).json({ message: "User not found" });
-    //     }
-
-    //     // Create a Razorpay payment order
-    //     const options = {
-    //         amount: amount * 100,
-    //         currency: 'INR',
-    //         receipt: `wallet_${userId}`,
-    //         payment_capture: 1 // Automatically capture the payment when it's authorized
-    //     };
-    //     const paymentOrder = await razorpay.orders.create(options);
-
-    //     // Return the payment order details to the client
-    //     return res.status(200).json({ paymentOrder });
-    // } catch (error) {
-    //     console.error("Error creating Razorpay payment order:", error);
-    //     return res.status(500).json({ message: "Internal server error" });
-    // }
-
-	try {
-        const instance = new Razorpay({
-            key_id: "rzp_test_SFr3BHYF2iRQ4Z",
-            key_secret: "SvQwqf6At5YqW3FOUsdRAkkN"
-        })
-        const options = {
-            amount: req.body.amount * 100,
-            currency: 'INR',
-            receipt: "alsnflakmf646464654",
+        // Check if userId and amount are provided
+        if (!userId || !amount) {
+            return res.status(400).json({ message: "userId and amount are required" });
         }
-        instance.orders.create(options, (error, order) => {
-            if (error) {
-                console.log(error);
-                return res.status(500).json("Something Went Wrong!!")
-            }
-            else {
-                return res.status(200).json({ "data": order });
-            }
-        })
+
+        // Find the user by ID
+        const user = await UserModel.findById(userId);
+
+        // Check if user exists
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Create a Razorpay payment order
+        const options = {
+            amount: amount * 100,
+            currency: 'INR',
+            receipt: `wallet_${userId}`,
+            payment_capture: 1 // Automatically capture the payment when it's authorized
+        };
+        const paymentOrder = await razorpay.orders.create(options);
+        
+        return res.status(200).json({ paymentOrder });
     } catch (error) {
-
-        next(error);
-
+        console.error("Error creating Razorpay payment order:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 }
 
