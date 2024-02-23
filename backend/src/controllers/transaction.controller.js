@@ -1,132 +1,173 @@
+// Importing systems
 import Razorpay from "razorpay";
 import dotenv from "dotenv";
 import crypto from 'crypto';
+import createHttpError from "http-errors";
 
 // Importing services
 import { findUser } from "../services/user.service.js";
 
 // Importing models
 import TransactionModel from "../models/TransactionModel.js";
-import UserModel from "../models/UserModel.js";
 
 // Using dotenv
 dotenv.config();
 
-// Initialize Razorpay with your Razorpay API key and secret
+// Importing and initializing Razorpay with api key and secret
 const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
+	key_id: process.env.RAZORPAY_KEY_ID,
+	key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
 
-
-
 export const addMoneyController = async (req, res) => {
-    try {
-        const { amount } = req.body;
+	try {
+		const { amount } = req.body;
 		const userId = req.user.userId;
 
-        // Check if userId and amount are provided
-        if (!userId || !amount) {
-            return res.status(400).json({ message: "userId and amount are required" });
-        }
+		// Checking if userId and amount are provided
+		if (!userId || !amount) {
+			throw createHttpError.BadRequest("userId and amount are required");
+		}
 
-        // Find the user by ID
-        const user = await UserModel.findById(userId);
+		// Finding the user by ID
+		// const user = await UserModel.findById(userId);
+		const user = await findUser(userId);
 
-        // Check if user exists
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+		// Checking if user exists
+		if (!user) {
+			throw createHttpError.NotFound("User not found");
+		}
 
-        // Create a Razorpay payment order
-        const options = {
-            amount: amount * 100,
-            currency: 'INR',
-            receipt: `wallet_${userId}`,
-            payment_capture: 1 // Automatically capture the payment when it's authorized
-        };
-        const paymentOrder = await razorpay.orders.create(options);
-        
-        return res.status(200).json({ paymentOrder });
-    } catch (error) {
-        console.error("Error creating Razorpay payment order:", error);
-        return res.status(500).json({ message: "Internal server error" });
-    }
+		// Creating a Razorpay payment order
+		const options = {
+			amount: amount * 100,
+			currency: 'INR',
+			receipt: crypto.randomBytes(10).toString("hex"),
+			payment_capture: 1 // Automatically capturing the payment when it's authorized
+		};
+
+		const paymentOrder = await razorpay.orders.create(options);
+
+		return res.status(200).json({ paymentOrder });
+
+	} catch (error) {
+		next(error);
+	}
 }
 
 
 export const verifyController = async (req, res) => {
-    try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-        const sign = razorpay_order_id + '|' + razorpay_payment_id;
-        const expectedSign = crypto.createHmac("sha256", process.env.KEY_SECRET).update(sign.toString()).digest("hex");
-        if (razorpay_signature === expectedSign) {
-            return res.json({ "message": "Payment Verified Successful", "status": 200, "data": req.body });
-        }
-        else {
-            return res.json({ "message": "Payment Verified Unccessful", "status": 500 });
-        }
-    } catch (error) {
+	try {
+		const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
+		const userId = req.user.userId;
 
-        next(error);
 
-    }
+		if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !amount) {
+			throw createHttpError.BadRequest("all fields are required");
+		}
+
+		const sign = razorpay_order_id + '|' + razorpay_payment_id;
+		const expectedSign = crypto.createHmac("sha256", process.env.KEY_SECRET).update(sign.toString()).digest("hex");
+		if (razorpay_signature === expectedSign) {
+
+			const user = await findUser(userId);
+
+			if (!user) {
+				throw createHttpError.NotFound("User not found");
+			}
+
+			// Adding Razorpay details
+			user.razorpay_details.push({
+				razorpay_order_id,
+				razorpay_payment_id,
+				razorpay_signature
+			});
+
+			await user.save();
+
+			res.status(200).json({
+				message: "Payment successful",
+				status: "ok",
+				data: {
+					razorpay_order_id,
+					razorpay_payment_id,
+					razorpay_signature
+				}
+			});
+
+		}
+		else {
+			throw createHttpError.BadRequest("Payment unsuccessful");
+		}
+	} catch (error) {
+		next(error);
+	}
 }
 
 // sendMoneyController controller
 export const sendMoneyController = async (req, res, next) => {
 	try {
-		const { receiverId, senderId, amount } = req.body;
+		const { receiverId, amount } = req.body;
+		const senderId = req.user.userId;
 
-		// console.log("IN 1st")
-
-		// Find sender and receiver
+		// Finding sender and receiver
 		const sender = await findUser(senderId);
 		const receiver = await findUser(receiverId);
 
-		// Check if sender and receiver exist
+		// Checking if sender and receiver exist
 		if (!sender || !receiver) {
-			return res.status(404).json({ message: "Sender or receiver not found" });
+			throw createHttpError.NotFound("Sender or receiver not found");
 		}
 
-		// Check if sender has sufficient balance
+		// Checking if sender has sufficient balance
 		if (sender.balance < amount) {
-			return res.status(400).json({ message: "Insufficient balance" });
+			throw createHttpError.BadRequest("Insufficient balance");
 		}
 
-		// Deduct amount from sender and add to receiver
-		sender.balance -= amount;
-		receiver.balance += amount;
+		// Deducting amount from sender and add to receiver
+		sender.balance -= parseInt(amount);
+		receiver.balance += parseInt(amount);
 
-		// Save sender and receiver
+		// Saving sender and receiver
 		await sender.save();
 		await receiver.save();
 
-		// Create transaction record
+		// Creating transaction record
 		const transaction = new TransactionModel({
 			sender: sender._id,
 			receiver: receiver._id,
-			amount,
-			type: 'debit', // Sender's perspective
-			description: 'Funds Transfer'
+			amount: amount,
+			type: 'debit',
+			description: 'Fund Send'
 		});
 		await transaction.save();
 
-		// Create reverse transaction for receiver
+		// Creating reverse transaction for receiver
 		const reverseTransaction = new TransactionModel({
 			sender: sender._id,
 			receiver: receiver._id,
-			amount,
-			type: 'credit', // Receiver's perspective
-			description: 'Funds Received'
+			amount: amount,
+			type: 'credit',
+			description: 'Fund Received'
 		});
 		await reverseTransaction.save();
 
-		return res.status(200).json({ message: "Funds transferred successfully" });
+
+		res.status(200).json({
+			message: "Funds transferred successfully",
+			status: "ok",
+			data: {
+				sender: sender._id,
+				receiver: receiver._id,
+				amount: amount,
+			}
+		});
+
+
 	} catch (error) {
-		
-        next(error);
+
+		next(error);
 
 	}
 }
@@ -146,7 +187,7 @@ export const fetchTransactionsController = async (req, res) => {
 
 	} catch (error) {
 
-        next(error);
+		next(error);
 
 	}
 }

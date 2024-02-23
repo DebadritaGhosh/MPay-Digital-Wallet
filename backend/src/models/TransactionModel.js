@@ -26,6 +26,20 @@ const transactionSchema = new mongoose.Schema({
     description: {
         type: String
     },
+    razorpay_details: [{
+        razorpay_order_id: {
+            type: String,
+            required: false
+        },
+        razorpay_payment_id: {
+            type: String,
+            required: false
+        },
+        razorpay_signature: {
+            type: String,
+            required: false
+        }
+    }]
 }, {
 	collection: "transactions",
 	timestamps: true,
