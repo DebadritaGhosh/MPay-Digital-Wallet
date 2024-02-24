@@ -1,11 +1,17 @@
+// Importing libraries
+import { useSelector } from 'react-redux';
+
+// Importing styles
 import './App.css';
 
-import RegistrationPage from "./pages/RegistrationPage/RegistrationPage";
+// Importing routes
+import AppRoute from './routes';
 
 function App() {
+  const { user } = useSelector((state) => state.user);
   return (
     <div className="min-h-screen min-w-screen">
-      <RegistrationPage />
+      <AppRoute token={user.access_token} />
     </div>
   );
 }

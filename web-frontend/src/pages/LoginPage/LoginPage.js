@@ -1,17 +1,29 @@
+// Importing libraries
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useDispatch } from 'react-redux';
+
+// Importing components
 import Input from '../../components/Input/Input';
+
+// Importing schema
 import { loginSchema } from '../../utils/validation';
 
+// Importing slice
+import { loginUser } from '../../redux/slices/userSlice';
+
 function LoginPage() {
+  const dispatch = useDispatch();
+
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(loginSchema)
   });
 
   const onSubmit = async (data) => {
-    console.log("RESPONSE: ", data);
-  };
+    const response = await dispatch((loginUser({ ...data })));
+    console.log("RESPONSE =====================> ", response);
+  }
 
   return (
     <div className="flex bg-gray-900">
@@ -37,7 +49,7 @@ function LoginPage() {
               type="submit"
               className="bg-gray-800 text-white mt-8 w-full h-10 rounded-sm cursor-pointer"
             >
-              Register
+              Login
             </button>
           </form>
         </div>

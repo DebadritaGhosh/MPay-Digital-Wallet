@@ -2,7 +2,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 // Importing axios
-import api from "../services/api";
+import api from "../../services/api";
 
 const initialState = {
 	status: "",
@@ -15,16 +15,13 @@ const initialState = {
 		picture: "",
 		access_token: "",
 		refresh_token: "",
-		todos: []
 	},
 }
 
-export const loginUser = createAsyncThunk('auth/register', async (values, { rejectWithValue }) => {
+export const loginUser = createAsyncThunk('auth/login', async (values, { rejectWithValue }) => {
 	try {
-		const { data } = await api.post("/auth/login", {
-			...values
-		});
-		console.log(data);
+		const { data } = await api.post("/auth/login",values);
+		console.log("DATA !!!!!!!!!!!!!!!!!",data);
 		return data;
 	} catch (error) {
 		console.log(error);

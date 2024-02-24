@@ -5,7 +5,7 @@ import { persistReducer, persistStore } from "redux-persist";
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 
 // Importing slices
-import userSlice from "../redux/userSlice";
+import userSlice from "../slices/userSlice";
 
 // Creating the filter (for redux persist)
 const saveUserOnlyFilter = createFilter("user", ["user"]);
